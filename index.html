@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Felhőszolgáltatások 2026 — gyakorló teszt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a1420;
+    --bg-grid: rgba(140,178,214,0.05);
+    --panel: #101e2e;
+    --panel-border: #1f3349;
+    --text: #e9eff6;
+    --text-muted: #8ba0ba;
+    --text-faint: #5c728c;
+    --accent: #7c9ff2;
+    --accent-dim: rgba(124,159,242,0.14);
+    --correct: #4ade80;
+    --correct-bg: rgba(74,222,128,0.12);
+    --correct-border: #2f8f5c;
+    --incorrect: #f87171;
+    --incorrect-bg: rgba(248,113,113,0.12);
+    --incorrect-border: #b3524d;
+    --font-body: 'IBM Plex Sans', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0; min-height:100vh;
+    background:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px),
+      var(--bg);
+    background-size: 42px 42px, 42px 42px, 100% 100%;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 19px;
+    line-height: 1.55;
+    display:flex; justify-content:center;
+  }
+  .stage{ width:100%; max-width: 760px; min-height: 100vh; padding: 40px 24px 80px; display:flex; flex-direction:column; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: 34px; }
+  .brand{ font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.02em; color: var(--text-faint); }
+  .brand strong{ color: var(--accent); font-weight:600; }
+  .score-chip{ font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); background: var(--panel); border: 1px solid var(--panel-border); border-radius: 20px; padding: 6px 14px; white-space:nowrap; }
+  .score-chip b{ color: var(--text); }
+  .track{ height: 3px; width:100%; background: var(--panel-border); border-radius: 3px; margin-bottom: 44px; overflow:hidden; }
+  .track-fill{ height:100%; background: var(--accent); width:0%; transition: width .35s ease; }
+
+  .intro{ flex:1; display:flex; flex-direction:column; justify-content:center; text-align:left; }
+  .intro h1{ font-size: 2.5rem; line-height:1.15; margin: 0 0 18px; font-weight:700; letter-spacing: -0.01em; }
+  .intro h1 span{ color: var(--accent); }
+  .intro p{ color: var(--text-muted); font-size: 1.1rem; max-width: 58ch; margin: 0 0 8px; }
+  .intro-meta{ display:flex; gap: 28px; margin: 30px 0 38px; font-family: var(--font-mono); font-size: 0.95rem; color: var(--text-faint); flex-wrap:wrap; }
+  .intro-meta div b{ display:block; color: var(--text); font-size: 1.5rem; font-family: var(--font-body); font-weight: 700; }
+  .btn{ appearance:none; border:none; cursor:pointer; font-family: var(--font-body); font-weight: 600; font-size: 1.05rem; padding: 15px 30px; border-radius: 10px; background: var(--accent); color: #06201c; align-self:flex-start; transition: transform .15s ease, box-shadow .15s ease; }
+  .btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124,159,242,0.25); }
+  .btn:active{ transform: translateY(0); }
+  .btn.secondary{ background: transparent; color: var(--text); border: 1px solid var(--panel-border); }
+  .btn.secondary:hover{ box-shadow:none; border-color: var(--accent); }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .quiz{ flex:1; display:none; flex-direction:column; }
+  .quiz.active{ display:flex; }
+  .qnum{ font-family: var(--font-mono); color: var(--accent); font-size: 0.95rem; margin-bottom: 10px; }
+  .question{ font-size: 1.5rem; font-weight: 600; line-height: 1.35; margin: 0 0 30px; }
+  .question code{ font-family: var(--font-mono); background: var(--panel); border: 1px solid var(--panel-border); padding: 2px 7px; border-radius: 6px; font-size: 0.85em; color: var(--accent); }
+  .options{ display:flex; flex-direction:column; gap: 12px; margin-bottom: 26px; }
+  .option{ display:flex; align-items:flex-start; gap: 14px; text-align:left; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; padding: 16px 18px; cursor:pointer; font-family: var(--font-body); font-size: 1.07rem; color: var(--text); transition: border-color .15s ease, background .15s ease; }
+  .option:hover:not(:disabled){ border-color: var(--accent); background: var(--accent-dim); }
+  .option:disabled{ cursor: default; }
+  .opt-letter{ font-family: var(--font-mono); font-weight:600; color: var(--text-faint); border: 1px solid var(--panel-border); border-radius: 6px; min-width: 28px; height: 28px; display:flex; align-items:center; justify-content:center; font-size: 0.9rem; flex-shrink:0; }
+  .option.correct{ background: var(--correct-bg); border-color: var(--correct-border); }
+  .option.correct .opt-letter{ color: var(--correct); border-color: var(--correct-border); }
+  .option.incorrect{ background: var(--incorrect-bg); border-color: var(--incorrect-border); }
+  .option.incorrect .opt-letter{ color: var(--incorrect); border-color: var(--incorrect-border); }
+  .mark{ margin-left:auto; font-family: var(--font-mono); font-size: 1.1rem; flex-shrink:0; padding-left: 10px; }
+  .option.correct .mark{ color: var(--correct); }
+  .option.incorrect .mark{ color: var(--incorrect); }
+  .explain{ display:none; border-left: 3px solid var(--accent); background: var(--panel); border-radius: 0 12px 12px 0; padding: 18px 20px; margin-bottom: 28px; color: var(--text-muted); font-size: 1.02rem; line-height:1.6; }
+  .explain.show{ display:block; }
+  .explain .verdict{ font-family: var(--font-mono); font-weight:600; font-size: 0.92rem; display:block; margin-bottom: 8px; }
+  .explain.ok .verdict{ color: var(--correct); }
+  .explain.bad .verdict{ color: var(--incorrect); }
+  .nav-row{ display:flex; justify-content: flex-end; margin-top: auto; padding-top: 10px; }
+
+  .results{ flex:1; display:none; flex-direction:column; justify-content:center; }
+  .results.active{ display:flex; }
+  .results h2{ font-size: 2.2rem; margin: 0 0 6px; }
+  .results .big-score{ font-family: var(--font-mono); font-size: 4rem; font-weight:600; color: var(--accent); margin: 14px 0 4px; }
+  .results .sub{ color: var(--text-muted); margin-bottom: 34px; }
+  .results-actions{ display:flex; gap:12px; margin-bottom: 38px; flex-wrap:wrap; }
+  .review-list{ display:flex; flex-direction:column; gap: 10px; }
+  .review-item{ background: var(--panel); border: 1px solid var(--panel-border); border-left: 3px solid var(--incorrect-border); border-radius: 0 10px 10px 0; padding: 14px 18px; font-size: 0.98rem; color: var(--text-muted); }
+  .review-item b{ color: var(--text); font-weight:600; }
+  .review-item .rq{ font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-faint); margin-bottom:4px; display:block; }
+
+  @media (max-width: 520px){
+    body{ font-size: 17px; }
+    .intro h1{ font-size: 2rem; }
+    .question{ font-size: 1.3rem; }
+    .stage{ padding: 26px 18px 60px; }
+  }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; scroll-behavior:auto !important; } }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <div class="topbar">
+    <div class="brand">SZKTV <strong>／</strong> Felhőszolgáltatások modul (2026)</div>
+    <div class="score-chip" id="scoreChip">0 / 0 helyes</div>
+  </div>
+  <div class="track"><div class="track-fill" id="trackFill"></div></div>
+
+  <div class="intro" id="intro">
+    <h1>Felhő<br><span>szolgáltatások 2026</span></h1>
+    <p>20 kérdés a 2026-os SZKTV feladatsorból: felhőszolgáltatási modellek (IaaS/PaaS/SaaS), OpenStack, konténerek, Amazon/Google/Azure szolgáltatások, privát felhő, Azure Active Directory és virtuálisgép-üzemeltetési kérdések.</p>
+    <p>Válasz után azonnal látod, jól válaszoltál-e, és részletes magyarázatot is kapsz — a rossz válaszokra is kitérve, tanulási céllal.</p>
+    <div class="intro-meta">
+      <div><b>20</b>kérdés</div>
+      <div><b>2 pont</b>kérdésenként</div>
+      <div><b>40 pont</b>összesen</div>
+    </div>
+    <button class="btn" id="startBtn">Teszt indítása</button>
+  </div>
+
+  <div class="quiz" id="quiz">
+    <div class="qnum" id="qnum">1. kérdés / 20</div>
+    <div class="question" id="questionText"></div>
+    <div class="options" id="optionsList"></div>
+    <div class="explain" id="explain"><span class="verdict" id="verdict"></span><span id="explainText"></span></div>
+    <div class="nav-row"><button class="btn" id="nextBtn" disabled>Következő</button></div>
+  </div>
+
+  <div class="results" id="results">
+    <h2>Kész a teszt</h2>
+    <div class="big-score" id="bigScore">0 / 40</div>
+    <div class="sub" id="resultsSub">0 helyes válasz a 20-ból</div>
+    <div class="results-actions">
+      <button class="btn" id="restartBtn">Újra végig</button>
+      <button class="btn secondary" id="reviewMissedBtn">Csak a hibás kérdések</button>
+    </div>
+    <div class="review-list" id="reviewList"></div>
+  </div>
+
+</div>
+
+<script>
+const QUESTIONS = [{"q": "Melyik felhőszolgáltatás példája a Google Drive?", "o": ["IaaS", "PaaS", "SaaS", "DaaS"], "c": 2, "e": "A Google Drive egy kész, azonnal használható végfelhasználói alkalmazás, amelyet a felhasználó a mögöttes infrastruktúra vagy platform ismerete nélkül vesz igénybe — ez a SaaS (Software as a Service) modell tipikus példája. Nem IaaS (nincs szükség virtuális gépek vagy infrastruktúra kezelésére), nem PaaS (nem fejlesztői platform) és nem DaaS (nem asztali környezetet nyújt)."}, {"q": "Mi az OpenStack?", "o": ["Egy felhőszolgáltató", "Egy nyílt forráskódú felhő platform", "Egy adatbázis-kezelő rendszer", "Egy adatmentési szolgáltatás"], "c": 1, "e": "Az OpenStack egy nyílt forráskódú szoftverplatform, amellyel saját (jellemzően privát) felhő-infrastruktúra építhető ki és üzemeltethető. Nem maga egy felhőszolgáltató (mint pl. az AWS vagy Azure), nem adatbázis-kezelő rendszer, és nem adatmentési szolgáltatás."}, {"q": "Mit jelent a \"pay-as-you-go\" modell?", "o": ["Egy fix díjas szolgáltatás", "Az igények szerint történő fizetés", "Előre kifizetett rendszer", "Hosszú távú szerződéses modell"], "c": 1, "e": "A „pay-as-you-go” (használat alapú fizetés) modell lényege, hogy a tényleges igénybevétel, felhasznált erőforrás alapján fizetünk, nem fix összeget. Nem fix díjas, nem előre kifizetett (prepaid), és nem hosszú távú, kötött szerződéses konstrukció."}, {"q": "Mi a konténerek szerepe a felhőszolgáltatásokban?", "o": ["Virtuális gépek logikai csoportosítása", "Az alkalmazások izolálása és hordozhatóságának növelése", "Biztonsági mentés", "Adatok tömörítése"], "c": 1, "e": "A konténerek (pl. Docker) az alkalmazást a futtatásához szükséges függőségekkel együtt egy elszigetelt, könnyen hordozható egységbe csomagolják, amely bármely kompatibilis környezetben egységesen futtatható. Nem virtuális gépek csoportosítására, nem biztonsági mentésre és nem adattömörítésre szolgálnak."}, {"q": "Mi az alapszintű szolgáltatás egy IaaS rendszernél?", "o": ["Operációs rendszer biztosítása", "Virtuális gépek biztosítása", "Szoftverfejlesztői eszközök biztosítása", "Adattárolás"], "c": 1, "e": "Az IaaS (Infrastructure as a Service) alapszolgáltatása a virtuális gépek (számítási kapacitás) biztosítása, amelyeken a felhasználó maga telepíti és konfigurálja az operációs rendszert és az alkalmazásokat. Az operációs rendszer biztosítása már egy magasabb absztrakciós szint (PaaS/SaaS) jellemzője, a fejlesztői eszközök a PaaS, az önálló adattárolás pedig egy specifikusabb (storage) szolgáltatás, nem az IaaS alapja."}, {"q": "Melyik az Amazon felhőalapú tárolási szolgáltatása?", "o": ["Amazon EC2", "Amazon S3", "Amazon Lambda", "Amazon SNS"], "c": 1, "e": "Az Amazon S3 (Simple Storage Service) az AWS objektumalapú felhőtárolási szolgáltatása. Az EC2 virtuális szerverek (számítási kapacitás) biztosítására, a Lambda szerver nélküli (serverless) kódfuttatásra, az SNS pedig üzenetküldésre/értesítésekre szolgál, egyik sem elsődlegesen tárolási szolgáltatás."}, {"q": "Miért előnyös a skálázhatóság a felhőben?", "o": ["Csak kis cégek számára elérhető", "A szolgáltatás díja hosszú távra állandóvá válik", "Költséghatékonyan növelhető kapacitás", "Lehetővé teszi több virtuális gép futtatását"], "c": 2, "e": "A skálázhatóság legfőbb előnye, hogy a kapacitás az aktuális igényekhez igazítva, költséghatékonyan növelhető (vagy csökkenthető), anélkül hogy előre drága, túlméretezett infrastruktúrát kellene beszerezni. Nem csak kisvállalatoknak elérhető, nem jár állandó, fix díjjal (épp a rugalmas költség a lényeg), és nem egyszerűen „több VM futtatásáról” szól, hanem az erőforrások dinamikus igazításáról."}, {"q": "Melyik szolgáltatás biztosít gépi tanulási képességeket a Google Cloud Platformon?", "o": ["Google Drive", "Google AI Platform", "Google Search", "Google Maps"], "c": 1, "e": "A Google AI Platform (ma már részben Vertex AI néven) kifejezetten gépi tanulási modellek fejlesztésére, betanítására és üzembe állítására szolgáló felhőszolgáltatás. A Google Drive tárhelyszolgáltatás, a Google Search keresőmotor, a Google Maps térképszolgáltatás, egyikük sem elsődlegesen gépi tanulási platform."}, {"q": "Mi a DevOps szerepe a felhőszolgáltatásokban?", "o": ["Hardverek karbantartása", "Szoftverek gyors és folyamatos szállítása", "Biztonsági mentés", "Hálózati konfigurációk beállítása"], "c": 1, "e": "A DevOps egy módszertani és kulturális megközelítés, amelynek célja a fejlesztés és az üzemeltetés szorosabb összekapcsolásával a szoftverek gyors, megbízható és folyamatos szállítása (pl. CI/CD segítségével). Nem elsődlegesen hardverkarbantartásról, biztonsági mentésről vagy hálózati konfigurációról szól, bár ezekhez is kapcsolódhat automatizáció formájában."}, {"q": "Melyik jellemző az alábbiak közül a privát felhőre?", "o": ["Alacsonyabb adatbiztonság", "Csak internetkapcsolaton keresztül elérhető", "Nagyobb ellenőrzés az adatok felett", "Csak adattárolásra alkalmas"], "c": 2, "e": "A privát felhő egyetlen szervezet kizárólagos használatára épül ki, ezért nagyobb kontrollt (ellenőrzést) biztosít az adatok és az infrastruktúra felett, mint egy publikus felhő. Nem jár alacsonyabb adatbiztonsággal (épp ellenkezőleg, jellemzően magasabb kontroll miatt biztonságosabbnak tartják), nem kizárólag interneten keresztül érhető el (gyakran belső hálózaton is), és nem korlátozódik kizárólag adattárolásra."}, {"q": "Mi az \"on-premises\" környezet?", "o": ["Nyilvános adatközpont", "A vállalat saját adatközpontja", "Felhőalapú infrastruktúra", "Hálózatok teljes hiánya"], "c": 1, "e": "Az „on-premises” (helyben üzemeltetett) környezet a vállalat saját, fizikailag a saját telephelyén üzemeltetett adatközpontját/infrastruktúráját jelenti, szemben a felhőben bérelt erőforrásokkal. Nem nyilvános (megosztott) adatközpont, nem felhőalapú infrastruktúra, és nem jelenti a hálózatok hiányát."}, {"q": "Mi az Azure Active Directory (AAD)?", "o": ["Az Azure biztonsági mentési szolgáltatása", "Az Azure felhasználó- és identitáskezelő szolgáltatása", "Az Azure adattárolási szolgáltatása", "Az Azure hálózatkezelési szolgáltatása"], "c": 1, "e": "Az Azure Active Directory (ma Microsoft Entra ID) az Azure felhasználó- és identitáskezelő szolgáltatása, amely a hitelesítést és jogosultságkezelést biztosítja a felhőalapú és hibrid környezetekben. Nem biztonsági mentési, nem adattárolási és nem hálózatkezelési szolgáltatás."}, {"q": "Melyik operációs rendszert használhatjuk Azure virtuális gépeken?", "o": ["Windows", "Linux", "Mindkettőt", "Egyiket sem"], "c": 2, "e": "Az Azure Virtual Machines szolgáltatás mind Windows, mind Linux alapú virtuális gépek létrehozását és futtatását támogatja, a felhasználó választása szerint. Nem korlátozódik kizárólag az egyikre, és nyilvánvalóan nem igaz, hogy egyiket sem lehetne használni."}, {"q": "Melyik régióban NEM érdemes VM-et létrehozni, ha alacsony késleltetés a cél?", "o": ["A felhasználóhoz közel eső régióban", "Egy másik kontinensen lévő régióban", "Ugyanazon az országon belül", "Ugyanazon az adatközponton belül"], "c": 1, "e": "Minél nagyobb a fizikai (földrajzi) távolság a felhasználó és a VM által használt adatközpont között, annál nagyobb a hálózati késleltetés — ezért egy másik kontinensen lévő régió választása alacsony késleltetés céljából kifejezetten kerülendő. A felhasználóhoz közeli régió, az azonos ország, vagy akár azonos adatközpont választása éppen a késleltetés csökkentését szolgálja."}, {"q": "Melyik szintű lemezt válasszuk, ha kiemelten fontos a teljesítmény az Azure VM-ek esetén?", "o": ["Standard HDD", "Standard SSD", "Premium SSD", "Archív tároló"], "c": 2, "e": "A Premium SSD nyújtja az Azure lemeztípusai közül a legmagasabb teljesítményt (nagy IOPS és alacsony késleltetés), ezért ez ajánlott, ha a teljesítmény kiemelten fontos szempont. A Standard HDD és Standard SSD alacsonyabb teljesítményű, olcsóbb opciók, az archív tároló pedig kifejezetten ritkán elért, hosszú távú archiválásra szolgál, nem aktív VM-teljesítményre."}, {"q": "Mi történik, ha leállítunk egy Azure VM-et, de nem töröljük?", "o": ["Teljesen ingyenessé válik", "Csak a tárolási költségek maradnak meg", "Nem lesz elérhető, de továbbra is fizetni kell a futásért", "Az összes adat elvész"], "c": 1, "e": "Ha egy Azure VM-et leállítunk (deallokáljuk), a számítási (compute) díjazás megszűnik, de a hozzá tartozó lemezek (storage) továbbra is léteznek és után kell fizetni — tehát csak a tárolási költségek maradnak meg. Nem válik teljesen ingyenessé (a tárolás továbbra is díjköteles), nem kell fizetni a „futásért” (hiszen a gép nem fut), és az adatok nem vesznek el a leállítástól — azok a törlésig megmaradnak."}, {"q": "Válassza ki az alábbiak közül, melyik felhőalapú adattároló szolgáltatás?", "o": ["SQL Server", "Dropbox", "SAP ERP", "Microsoft Word"], "c": 1, "e": "A Dropbox egy felhőalapú fájltárolási és -megosztási szolgáltatás. Az SQL Server egy adatbázis-kezelő rendszer (nem elsődlegesen fájltároló), a SAP ERP egy vállalatirányítási rendszer, a Microsoft Word pedig egy szövegszerkesztő alkalmazás — egyik sem elsődlegesen felhőalapú adattároló szolgáltatás."}, {"q": "Melyik cég kínálja az Azure felhőszolgáltatást?", "o": ["Amazon", "Google", "Microsoft", "IBM"], "c": 2, "e": "Az Azure a Microsoft felhőszolgáltatási platformja. Az Amazon az AWS-t, a Google a Google Cloud Platformot, az IBM pedig az IBM Cloudot kínálja saját felhőszolgáltatásként, nem az Azure-t."}, {"q": "Melyik szolgáltatás típusa az Office 365?", "o": ["IaaS", "PaaS", "SaaS", "DaaS"], "c": 2, "e": "Az Office 365 (ma Microsoft 365) kész, azonnal használható irodai alkalmazáscsomagot biztosít a felhasználóknak az infrastruktúra vagy platform ismerete nélkül — ez a SaaS modell jellemző példája. Nem IaaS, nem PaaS, és nem DaaS (asztali környezet szolgáltatás)."}, {"q": "Mi a felhőszolgáltatások egyik fő hátránya?", "o": ["Nincs biztonsági mentés az adatokról", "Biztonsági és adatvédelmi kockázatok", "Nem skálázható", "Nem érthető el mindig"], "c": 1, "e": "A felhőszolgáltatások egyik elismert hátránya, hogy az adatok harmadik fél infrastruktúráján tárolódnak, ami biztonsági és adatvédelmi kockázatokat (pl. jogosultságkezelés, megfelelőség, adatszuverenitás kérdései) vethet fel. Nem igaz, hogy nincs biztonsági mentési lehetőség, és a felhő pont a jó skálázhatóságáról ismert, nem az ellenkezőjéről; az „nem érhető el mindig” is túlzó, általánosító állítás, nem a leggyakrabban hivatkozott valódi hátrány."}];
+const POINTS_PER_Q = 2;
+const LETTERS = ['a','b','c','d','e','f'];
+let current = 0;
+let score = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+let reviewMode = false;
+let reviewIndices = [];
+
+const introEl = document.getElementById('intro');
+const quizEl = document.getElementById('quiz');
+const resultsEl = document.getElementById('results');
+const qnumEl = document.getElementById('qnum');
+const questionTextEl = document.getElementById('questionText');
+const optionsListEl = document.getElementById('optionsList');
+const explainEl = document.getElementById('explain');
+const verdictEl = document.getElementById('verdict');
+const explainTextEl = document.getElementById('explainText');
+const nextBtn = document.getElementById('nextBtn');
+const scoreChip = document.getElementById('scoreChip');
+const trackFill = document.getElementById('trackFill');
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  introEl.style.display = 'none';
+  quizEl.classList.add('active');
+  renderQuestion();
+});
+
+nextBtn.addEventListener('click', () => {
+  const order = reviewMode ? reviewIndices : QUESTIONS.map((_,i)=>i);
+  current++;
+  if(current >= order.length){ showResults(); } else { renderQuestion(); }
+});
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  current = 0; score = 0; reviewMode = false;
+  answers = new Array(QUESTIONS.length).fill(null);
+  resultsEl.classList.remove('active');
+  quizEl.classList.add('active');
+  renderQuestion();
+});
+
+document.getElementById('reviewMissedBtn').addEventListener('click', () => {
+  reviewIndices = QUESTIONS.map((_,i)=>i).filter(i => answers[i] !== QUESTIONS[i].c);
+  if(reviewIndices.length === 0) return;
+  reviewMode = true;
+  current = 0;
+  resultsEl.classList.remove('active');
+  quizEl.classList.add('active');
+  renderQuestion();
+});
+
+function currentOrder(){ return reviewMode ? reviewIndices : QUESTIONS.map((_,i)=>i); }
+
+function renderQuestion(){
+  const order = currentOrder();
+  const idx = order[current];
+  const item = QUESTIONS[idx];
+
+  qnumEl.textContent = (current+1) + '. kérdés / ' + order.length + (reviewMode ? ' (áttekintés)' : '');
+  questionTextEl.textContent = item.q;
+  optionsListEl.innerHTML = '';
+  explainEl.classList.remove('show','ok','bad');
+  nextBtn.disabled = true;
+  nextBtn.textContent = (current === order.length - 1) ? 'Eredmény' : 'Következő';
+
+  item.o.forEach((optText, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.innerHTML = '<span class="opt-letter">' + LETTERS[i] + '</span><span>' + optText + '</span>';
+    btn.addEventListener('click', () => selectAnswer(idx, i, btn));
+    optionsListEl.appendChild(btn);
+  });
+
+  trackFill.style.width = (((current) / order.length) * 100) + '%';
+  updateScoreChip();
+}
+
+function selectAnswer(qIdx, chosenIdx, btnEl){
+  const item = QUESTIONS[qIdx];
+  const allOptionButtons = Array.from(optionsListEl.children);
+  allOptionButtons.forEach(b => b.disabled = true);
+
+  const alreadyAnswered = answers[qIdx] !== null;
+  if(!alreadyAnswered){
+    answers[qIdx] = chosenIdx;
+    if(chosenIdx === item.c) score++;
+  }
+
+  allOptionButtons.forEach((b, i) => { if(i === item.c) b.classList.add('correct'); });
+  if(chosenIdx !== item.c){ allOptionButtons[chosenIdx].classList.add('incorrect'); }
+  allOptionButtons.forEach((b, i) => {
+    if(i === item.c){ const m = document.createElement('span'); m.className='mark'; m.textContent='✓'; b.appendChild(m); }
+    else if(i === chosenIdx){ const m = document.createElement('span'); m.className='mark'; m.textContent='✕'; b.appendChild(m); }
+  });
+
+  const isCorrect = chosenIdx === item.c;
+  explainEl.classList.add('show', isCorrect ? 'ok' : 'bad');
+  verdictEl.textContent = isCorrect ? 'Helyes válasz' : ('Nem helyes — a jó válasz: ' + LETTERS[item.c].toUpperCase());
+  explainTextEl.textContent = item.e;
+  nextBtn.disabled = false;
+  updateScoreChip();
+}
+
+function updateScoreChip(){
+  const answeredCount = answers.filter(a => a !== null).length;
+  scoreChip.innerHTML = '<b>' + score + '</b> / ' + answeredCount + ' helyes';
+}
+
+function showResults(){
+  quizEl.classList.remove('active');
+  resultsEl.classList.add('active');
+  trackFill.style.width = '100%';
+
+  if(!reviewMode){
+    const points = score * POINTS_PER_Q;
+    document.getElementById('bigScore').textContent = points + ' / 40';
+    document.getElementById('resultsSub').textContent = score + ' helyes válasz a ' + QUESTIONS.length + '-ból';
+  } else {
+    document.getElementById('bigScore').textContent = '✓';
+    document.getElementById('resultsSub').textContent = 'Áttekintés kész';
+  }
+
+  const missedIdx = QUESTIONS.map((_,i)=>i).filter(i => answers[i] !== null && answers[i] !== QUESTIONS[i].c);
+  const reviewListEl = document.getElementById('reviewList');
+  const reviewBtn = document.getElementById('reviewMissedBtn');
+  reviewListEl.innerHTML = '';
+
+  if(missedIdx.length === 0){
+    reviewBtn.style.display = 'none';
+  } else {
+    reviewBtn.style.display = 'inline-flex';
+    reviewBtn.textContent = 'Hibás kérdések újra (' + missedIdx.length + ')';
+    missedIdx.forEach(i => {
+      const item = QUESTIONS[i];
+      const div = document.createElement('div');
+      div.className = 'review-item';
+      div.innerHTML = '<span class="rq">' + (i+1) + '. kérdés</span><b>' + item.q + '</b><br>Helyes válasz: ' + LETTERS[item.c].toUpperCase() + ') ' + item.o[item.c];
+      reviewListEl.appendChild(div);
+    });
+  }
+}
+</script>
+</body>
+</html>
